@@ -1,0 +1,157 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace CRUD
+{
+    public partial class Form1 : Form
+    {
+        private readonly projekEntities db = new projekEntities();
+        int id;
+
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(textBox1.Text) || string.IsNullOrEmpty(textBox3.Text) || string.IsNullOrEmpty(textBox4.Text) || string.IsNullOrEmpty(comboBox2.Text))
+            {
+                MessageBox.Show("Lengkapi semua field data");
+                return;
+            }
+            if (id == 0)
+            {
+                var data = new produk();
+                data.nama = textBox1.Text;
+                data.harga = Convert.ToDecimal(textBox3.Text);
+                data.stok = Convert.ToInt32(textBox4.Text);
+                data.stat = true;
+                data.id_kat = Convert.ToInt32(comboBox2.SelectedValue);
+
+                db.produks.Add(data);
+                db.SaveChanges();
+
+                textBox1.Clear();
+                textBox3.Clear();
+                textBox4.Clear();
+            }
+            else
+            {
+                var data = db.produks.Find(id);
+               
+                data.nama = textBox1.Text;
+                data.harga = Convert.ToDecimal(textBox3.Text);
+                data.stok = Convert.ToInt32(textBox4.Text);
+                data.stat = true;
+                data.id_kat = Convert.ToInt32(comboBox2.SelectedValue);
+
+                
+                db.SaveChanges();
+            }
+            Form1_Load(sender, e);
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(textBox2.Text))
+            {
+                MessageBox.Show("Isi field data terlebuh dahulu");
+                return;
+            }
+            else
+            {
+                var data = new kategori();
+                data.nama = textBox2.Text;
+
+                db.kategoris.Add(data);
+                db.SaveChanges();
+            }
+            Form1_Load(sender, e);
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            comboBox2.DataSource = db.kategoris.Where(p => p.nama.Contains(comboBox2.Text)).ToList();
+            comboBox2.DisplayMember = "nama";
+            comboBox2.ValueMember = "id_kat";
+            comboBox2.SelectedIndex = -1;
+
+            dataGridView1.DataSource = db.produks.Where(p => p.stat == true).Select(u => new
+            {
+                u.id_pr,
+                u.nama,
+                kategori = u.kategori.nama,
+                u.harga,
+                u.stok,
+                u.stat
+
+            }).ToList();
+        }
+
+        private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            int idd = Convert.ToInt32(dataGridView1.Rows[e.RowIndex].Cells["id_pr"].Value);
+
+            if (dataGridView1.Columns[e.ColumnIndex].Name == "edit")
+            {
+                id = idd;
+                var data = db.produks.Find(idd);
+                textBox1.Text = data.nama;
+                textBox3.Text = data.harga.ToString();
+                textBox4.Text = data.stok.ToString();
+                comboBox2.SelectedValue = data.id_kat;
+            }
+            if (dataGridView1.Columns[e.ColumnIndex].Name == "hapus")
+            {
+                DialogResult r = MessageBox.Show("Apakah Anda yakin ingin menghapus data ini?", "Information", MessageBoxButtons.YesNo);
+
+                if ( r == DialogResult.Yes)
+                {
+                    var data = db.produks.Find(idd);
+                    data.stat = false;
+                    db.SaveChanges();
+                }
+                Form1_Load(sender, e);
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(textBox1.Text))
+            {
+                MessageBox.Show("Isi field yang ingin dicari");
+                return;
+            }
+            else
+            {
+                dataGridView1.DataSource = db.produks.Where(p => p.stat == true && p.nama.Contains(textBox1.Text)).Select(u => new
+                {
+                    u.id_pr,
+                    u.nama,
+                    kategori = u.kategori.nama,
+                    u.harga,
+                    u.stok,
+                    u.stat
+
+                }).ToList();
+            }
+
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            textBox1.Clear();
+
+           Form1_Load(sender, e);
+        }
+    }
+}
